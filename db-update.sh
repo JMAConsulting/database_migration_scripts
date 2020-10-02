@@ -52,17 +52,17 @@ echo "Creating mysqldump of civicrm database and dumping at $PWD/$PRODCIVIDBNAME
 $MYSQLDUMP $PRODCIVIDBNAME > "$PRODCIVIDBNAME.mysql"
 sed -i 's/DEFINER=[^*]*\*/\*/g' "$PRODCIVIDBNAME.mysql"
 
-echo "Dropping Drupal staging database"
+echo "Dropping CMS staging database"
 $MYSQLCMD -e "DROP DATABASE $STAGDBNAME"
 
-echo "Creating Drupal staging database"
+echo "Creating CMS staging database"
 $MYSQLCMD -e "CREATE DATABASE $STAGDBNAME"
 $MYSQLCMD -e "GRANT ALL PRIVILEGES ON $STAGDBNAME.* TO '$STAGINGDBUSER'@'localhost'"
 
-echo "Updating Drupal staging database\n"
+echo "Updating CMS staging database\n"
 $MYSQLDUMP $STAGDBNAME < "$PWD/$PRODDBNAME.mysql"
 
-echo "Remove the prod Drupal DB mysqldump"
+echo "Remove the prod CMS DB mysqldump"
 rm "$PWD/$PRODDBNAME.mysql"
 
 echo "Dropping CiviCRM staging database"
@@ -79,3 +79,12 @@ echo "Remove the prod CiviCRM DB mysqldump"
 rm "$PWD/$PRODCIVIDBNAME.mysql"
 
 echo; echo "NOTE: Logout from your CMS to avoid session conflicts."
+
+if [ ! -z "$CVPATH" && $MOSAICO == "true" ];
+  $CVPATH --cwd $CMSPATH api mosaico_template.replaceurls from_url=$FROMURL to_url=$TOURL
+fi
+
+# If we are in wordpress we also need to run wp-cli search and replace to replace various option values.
+if [ $CMS == "Wordpress" ];
+  wp search-replace $FROMURL $TOURL
+fi
